@@ -259,7 +259,7 @@ export const getUsersByGoal = async (goal: string): Promise<SearchedUser[]> => {
 export const getCandidateUsers = async (
   owner_id: string,
   config: MatchGroupConfig
-): Promise<any[]> => {
+): Promise<string[]> => {
   let query = `SELECT user_id FROM user`;
   let where = ` WHERE 1 == 1`;
 
@@ -303,7 +303,7 @@ export const getCandidateUsers = async (
     "SELECT user_id, user_name, office_id, user_icon_id FROM user WHERE user_id = ?",
     [owner_id]
   );
-  return userRows;
+  return userRows.map((row) => row.user_id);
 }
 
 export const getUserForFilter = async (
