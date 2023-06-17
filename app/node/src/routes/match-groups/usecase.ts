@@ -2,15 +2,13 @@ import { v4 as uuidv4 } from "uuid";
 import {
   MatchGroupDetail,
   MatchGroupConfig,
-  UserForFilter,
 } from "../../model/types";
 import {
   getMatchGroupDetailByMatchGroupId,
-  getUserIdsBeforeMatched,
   hasSkillNameRecord,
   insertMatchGroup,
 } from "./repository";
-import { getCandidateUsers, getUserForFilter } from "../users/repository";
+import { getCandidateUsers } from "../users/repository";
 
 export const checkSkillsRegistered = async (
   skillNames: string[]
@@ -26,7 +24,6 @@ export const checkSkillsRegistered = async (
 
 export const createMatchGroup = async (
   matchGroupConfig: MatchGroupConfig,
-  timeout?: number
 ): Promise<MatchGroupDetail | undefined> => {
   const candidates = await getCandidateUsers(matchGroupConfig.ownerId, matchGroupConfig);
 
@@ -44,31 +41,4 @@ export const createMatchGroup = async (
   });
 
   return await getMatchGroupDetailByMatchGroupId(matchGroupId);
-};
-
-const isPassedDepartmentFilter = (
-  departmentFilter: string,
-  ownerDepartment: string,
-  candidateDepartment: string
-) => {
-  return departmentFilter === "onlyMyDepartment"
-    ? ownerDepartment === candidateDepartment
-    : ownerDepartment !== candidateDepartment;
-};
-
-const isPassedOfficeFilter = (
-  officeFilter: string,
-  ownerOffice: string,
-  candidateOffice: string
-) => {
-  return officeFilter === "onlyMyOffice"
-    ? ownerOffice === candidateOffice
-    : ownerOffice !== candidateOffice;
-};
-
-const isPassedMatchFilter = async (ownerId: string, candidateId: string) => {
-  const userIdsBeforeMatched = await getUserIdsBeforeMatched(ownerId);
-  return userIdsBeforeMatched.every(
-    (userIdBeforeMatched) => userIdBeforeMatched !== candidateId
-  );
 };
