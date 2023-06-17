@@ -69,7 +69,7 @@ export const getUsersByUserIds = async (
   }
   const inClause = userIds.map((userId) => `'${userId}'`).join(", ");
 
-  const query = `SELECT u.user_id, u.user_name, o.office_name, u.user_icon_id, f.file_name FROM user AS u \
+  const query = `SELECT u.user_id, u.user_name, o.office_name, u.user_icon_id, f.file_name u.entryDate, u.kana, FROM user AS u \
     LEFT JOIN office AS o ON o.office_id = u.office_id \
     LEFT JOIN file AS f ON f.file_id = u.user_icon_id \
     WHERE u.user_id IN (${inClause})`;
