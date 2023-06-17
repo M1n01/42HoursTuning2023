@@ -92,45 +92,31 @@ export const getUsersByTargets = async (
   // クエリを生成する
   let query = "SELECT user.user_id FROM user";
   let where = " WHERE 1 != 1 ";
-  let isDRM = false;
   for (const target of targets) {
     switch (target) {
       case "userName":
-        where += ` OR MATCH(user_name) AGAINST('%${keyword}%')`;
+        where += ` OR user_id IN (SELECT user_id FROM user WHERE user_name LIKE '%${keyword}%')`;
         break;
       case "kana":
-        where += ` OR MATCH(kana) AGAINST('%${keyword}%')`;
+        where += ` OR user_id IN (SELECT user_id FROM user WHERE kana LIKE '%${keyword}%')`;
         break;
       case "mail":
-        where += ` OR MATCH(mail) AGAINST('%${keyword}%')`;
+        where += ` OR user_id IN (SELECT user_id FROM user WHERE mail LIKE '%${keyword}%')`;
         break;
       case "department":
-        if (!isDRM) {
-          query += ` LEFT JOIN department_role_member AS drm ON user.user_id = drm.user_id`;
-          isDRM = true;
-        }
-        query += ` LEFT JOIN department AS d ON d.department_id = drm.department_id`;
-        where += ` OR (d.department_name LIKE '%${keyword}%' AND d.active = true AND drm.belong = true)`;
+        where += ` OR user_id IN (SELECT user_id FROM department_role_member WHERE department_id IN (SELECT department_id FROM department WHERE department_name LIKE '%${keyword}%' AND active = true) AND belong = true)`;
         break;
       case "role":
-        if (!isDRM) {
-          query += ` LEFT JOIN department_role_member AS drm ON user.user_id = drm.user_id`;
-          isDRM = true;
-        }
-        query += ` LEFT JOIN role AS r ON drm.role_id = r.role_id`;
-        where += ` OR r.role_name LIKE '%${keyword}%' AND r.active = true AND drm.belong = true`;
+        where += ` OR user_id IN (SELECT user_id FROM department_role_member WHERE role_id IN (SELECT role_id FROM role WHERE role_name LIKE '%${keyword}%' AND active = true) AND belong = true)`;
         break;
       case "office":
-        query += ` LEFT JOIN office AS o ON user.office_id = o.office_id`;
-        where += ` OR o.office_name LIKE '%${keyword}%'`;
+        where += ` OR office_id IN (SELECT office_id FROM office WHERE office_name LIKE '%${keyword}%')`;
         break;
       case "skill":
-        query += ` LEFT JOIN skill_member AS sm ON user.user_id = sm.user_id`;
-        query += ` LEFT JOIN skill AS s ON sm.skill_id = s.skill_id`;
-        where += ` OR s.skill_name LIKE '%${keyword}%'`;
+        where += ` OR user_id IN (SELECT user_id FROM skill_member WHERE skill_id IN (SELECT skill_id FROM skill WHERE skill_name LIKE '%${keyword}%'))`;
         break;
       case "goal":
-        where += ` OR MATCH(goal) AGAINST('%${keyword}%')`;
+        where += ` OR user_id IN (SELECT user_id FROM user WHERE goal LIKE '%${keyword}%')`;
         break;
       default:
         break;
