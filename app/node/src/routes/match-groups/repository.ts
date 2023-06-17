@@ -47,7 +47,7 @@ export const insertMatchGroup = async (matchGroupDetail: MatchGroupDetail) => {
   );
 
   const values = matchGroupDetail.members
-    .map((user_id) => `('${matchGroupDetail.matchGroupId}', '${user_id}')`)
+    .map((member) => `('${matchGroupDetail.matchGroupId}', '${member.userId}')`)
     .join(", ");
 
   await pool.query<RowDataPacket[]>(
