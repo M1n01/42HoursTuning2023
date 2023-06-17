@@ -114,45 +114,56 @@ export const getUsersByTargets = async (
   offset: number,
 ): Promise<SearchedUser[]> => {
   // クエリを生成する
-  let query = "SELECT user_id FROM user WHERE";
-  let isFirst = true;
+  let query = "SELECT user.user_id FROM user";
+  let where = " WHERE 1 != 1 ";
+  let isDRM = false;
   for (const target of targets) {
-    if (isFirst) {
-      isFirst = false;
-    } else {
-      query += ` OR`;
-    }
     switch (target) {
       case "userName":
-        query += ` user_name LIKE '%${keyword}%'`;
+        where += ` OR user_name LIKE '%${keyword}%'`;
         break ;
       case "kana":
-        query += ` kana LIKE '%${keyword}%'`;
+        where += ` OR kana LIKE '%${keyword}%'`;
         break ;
       case "mail":
-        query += ` mail LIKE '%${keyword}%'`;
+        where += ` OR mail LIKE '%${keyword}%'`;
         break ;
       case "department":
-        query += ` user_id IN (SELECT user_id FROM department_role_member WHERE department_id IN (SELECT department_id FROM department WHERE department_name LIKE '%${keyword}%' AND active = true) AND belong = true)`;
+        if (!isDRM) {
+          query += ` LEFT JOIN department_role_member AS drm ON user.user_id = drm.user_id`;
+          isDRM = true;
+        }
+        query += ` LEFT JOIN department AS d ON d.department_id = drm.department_id`;
+        where += ` OR d.department_name LIKE '%${keyword}%' AND d.active = true`
         break ;
       case "role":
-        query += ` user_id IN (SELECT user_id FROM department_role_member WHERE role_id IN (SELECT role_id FROM role WHERE role_name LIKE '%${keyword}%' AND active = true) AND belong = true)`;
+        if (!isDRM) {
+          query += ` LEFT JOIN department_role_member AS drm ON user.user_id = drm.user_id`;
+          isDRM = true;
+        }
+        query += ` LEFT JOIN role AS r ON drm.role_id = r.role_id`;
+        where += ` OR r.role_name LIKE '%${keyword}%' AND r.active = true AND drm.belong = true`;
         break ;
       case "office":
-        query += ` office_id IN (SELECT office_id FROM office WHERE office_name LIKE '%${keyword}%')`;
+        query += ` LEFT JOIN office AS o ON user.office_id = o.office_id`;
+        where += ` OR o.office_name LIKE '%${keyword}%'`;
         break ;
       case "skill":
-        query += ` user_id IN (SELECT user_id FROM skill_member WHERE skill_id IN (SELECT skill_id FROM skill WHERE skill_name LIKE '%${keyword}%'))`;
+        query += ` LEFT JOIN skill_member AS sm ON user.user_id = sm.user_id`;
+        query += ` LEFT JOIN skill AS s ON sm.skill_id = s.skill_id`;
+        where += ` OR s.skill_name LIKE '%${keyword}%'`;
         break ;
       case "goal":
-        query += ` goal LIKE '%${keyword}%'`;
+        where += ` OR goal LIKE '%${keyword}%'`;
         break ;
       default:
         break ;
     }
   }
   // 入社日とかなの昇順にソートする。
-  query += ` ORDER BY entry_date, kana LIMIT ${limit} OFFSET ${offset}`;
+  query += where;
+  query += ` ORDER BY user.entry_date, user.kana LIMIT ${limit} OFFSET ${offset}`;
+
   const [rows] = await pool.query<RowDataPacket[]>(query);
   const userIds: string[] = rows.map((row) => row.user_id);
 
