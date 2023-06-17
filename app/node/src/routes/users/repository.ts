@@ -1,6 +1,12 @@
 import { RowDataPacket } from "mysql2";
 import pool from "../../util/mysql";
-import { MatchGroupConfig, SearchedUser, Target, User, UserForFilter } from "../../model/types";
+import {
+  MatchGroupConfig,
+  SearchedUser,
+  Target,
+  User,
+  UserForFilter,
+} from "../../model/types";
 import {
   convertToSearchedUser,
   convertToUserForFilter,
@@ -93,7 +99,7 @@ export const getUsersByTargets = async (
   keyword: string,
   targets: Target[],
   limit: number,
-  offset: number,
+  offset: number
 ): Promise<SearchedUser[]> => {
   // クエリを生成する
   let query = "SELECT user.user_id FROM user";
@@ -102,22 +108,22 @@ export const getUsersByTargets = async (
   for (const target of targets) {
     switch (target) {
       case "userName":
-        where += ` OR user_name LIKE '%${keyword}%'`;
-        break ;
+        where += ` OR MATCH(user_name) AGAINST('%${keyword}%')`;
+        break;
       case "kana":
-        where += ` OR kana LIKE '%${keyword}%'`;
-        break ;
+        where += ` OR MATCH(kana) AGAINST('%${keyword}%')`;
+        break;
       case "mail":
-        where += ` OR mail LIKE '%${keyword}%'`;
-        break ;
+        where += ` OR MATCH(mail) AGAINST('%${keyword}%')`;
+        break;
       case "department":
         if (!isDRM) {
           query += ` LEFT JOIN department_role_member AS drm ON user.user_id = drm.user_id`;
           isDRM = true;
         }
         query += ` LEFT JOIN department AS d ON d.department_id = drm.department_id`;
-        where += ` OR (d.department_name LIKE '%${keyword}%' AND d.active = true AND drm.belong = true)`
-        break ;
+        where += ` OR (d.department_name LIKE '%${keyword}%' AND d.active = true AND drm.belong = true)`;
+        break;
       case "role":
         if (!isDRM) {
           query += ` LEFT JOIN department_role_member AS drm ON user.user_id = drm.user_id`;
@@ -125,21 +131,21 @@ export const getUsersByTargets = async (
         }
         query += ` LEFT JOIN role AS r ON drm.role_id = r.role_id`;
         where += ` OR r.role_name LIKE '%${keyword}%' AND r.active = true AND drm.belong = true`;
-        break ;
+        break;
       case "office":
         query += ` LEFT JOIN office AS o ON user.office_id = o.office_id`;
         where += ` OR o.office_name LIKE '%${keyword}%'`;
-        break ;
+        break;
       case "skill":
         query += ` LEFT JOIN skill_member AS sm ON user.user_id = sm.user_id`;
         query += ` LEFT JOIN skill AS s ON sm.skill_id = s.skill_id`;
         where += ` OR s.skill_name LIKE '%${keyword}%'`;
-        break ;
+        break;
       case "goal":
-        where += ` OR goal LIKE '%${keyword}%'`;
-        break ;
+        where += ` OR MATCH(goal) AGAINST('%${keyword}%')`;
+        break;
       default:
-        break ;
+        break;
     }
   }
   // 入社日とかなの昇順にソートする。
@@ -301,12 +307,12 @@ export const getCandidateUsers = async (
 
   // 自拠点の社員のみ対象
   if (config.officeFilter === "onlyMyOffice") {
-    where += ` AND user.office_id = (SELECT office_id FROM user WHERE user_id = '${owner_id}')`
+    where += ` AND user.office_id = (SELECT office_id FROM user WHERE user_id = '${owner_id}')`;
   }
 
   // 他拠点の社員のみ対象
   if (config.officeFilter === "excludeMyOffice") {
-    where += ` AND user.office_id != (SELECT office_id FROM user WHERE user_id = '${owner_id}')`
+    where += ` AND user.office_id != (SELECT office_id FROM user WHERE user_id = '${owner_id}')`;
   }
 
   // スキルが一致する社員のみ対象
@@ -327,18 +333,18 @@ export const getCandidateUsers = async (
   let userRows: RowDataPacket[];
   [userRows] = await pool.query<RowDataPacket[]>(query);
   return userRows.map((row) => row.user_id);
-}
+};
 
 export const getUserForFilter = async (
   userId?: string
 ): Promise<UserForFilter> => {
   let userRows: RowDataPacket[];
   if (!userId) {
-      const offset = Math.floor(Math.random() * 300001);
-      [userRows] = await pool.query<RowDataPacket[]>(
-        "SELECT user_id, user_name, office_id, user_icon_id FROM user LIMIT 1 OFFSET ?",
-        [offset]
-      );
+    const offset = Math.floor(Math.random() * 300001);
+    [userRows] = await pool.query<RowDataPacket[]>(
+      "SELECT user_id, user_name, office_id, user_icon_id FROM user LIMIT 1 OFFSET ?",
+      [offset]
+    );
   } else {
     [userRows] = await pool.query<RowDataPacket[]>(
       "SELECT user_id, user_name, office_id, user_icon_id FROM user WHERE user_id = ?",

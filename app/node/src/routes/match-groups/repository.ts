@@ -1,6 +1,11 @@
 import { RowDataPacket } from "mysql2";
 import pool from "../../util/mysql";
-import { MatchGroup, MatchGroupDetail, MatchGroupDto, User } from "../../model/types";
+import {
+  MatchGroup,
+  MatchGroupDetail,
+  MatchGroupDto,
+  User,
+} from "../../model/types";
 import { getUsersByUserIds } from "../users/repository";
 import { convertToMatchGroupDetail } from "../../model/utils";
 
