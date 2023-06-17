@@ -199,7 +199,7 @@ export const createMatchGroupsAPI = () => {
 
 export const getMatchGroupsAPI = () => {
   const res = http.get(
-    url(`/api/v1/match-groups/members/test-user-id?status=open`),
+    url(`/api/v1/match-groups/members/692ee607-9cdf-439b-8b06-1a435c99aa5a?status=open`),
     {
       cookies: {
         SESSION_ID: "test-session-id",
