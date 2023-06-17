@@ -28,12 +28,15 @@ export const createMatchGroup = async (
   const candidates = await getCandidateUsers(matchGroupConfig.ownerId, matchGroupConfig);
 
   const withoutOwner = candidates.filter((candidate) => {candidate != matchGroupConfig.ownerId});
-  // ownerを含んでいる場合があるので切り詰める
+  // ownerを含んでいる場合があるので切り詰める、足りない分はundefinedになる
   withoutOwner.length = matchGroupConfig.numOfMembers - 1;
 
-  const members = [matchGroupConfig.ownerId, ...withoutOwner];
+  const members = [matchGroupConfig.ownerId, ...withoutOwner].filter((member) => {member != undefined});
 
-  // TODO: 指定した条件に合うユーザーがいない場合は400エラーにする
+  // 指定した条件に合うユーザーがいない場合は400エラーにする
+  if (members.length < matchGroupConfig.numOfMembers) {
+    return;
+  }
 
   const matchGroupId = uuidv4();
   await insertMatchGroup({
