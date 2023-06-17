@@ -260,7 +260,7 @@ export const getCandidateUsers = async (
   owner_id: string,
   config: MatchGroupConfig
 ): Promise<string[]> => {
-  let query = `SELECT DISTINCT user.user_id FROM user`;
+  let query = `SELECT user.user_id FROM user`;
   let where = ` WHERE 1 = 1`;
 
   // 自部署の社員のみ対象
@@ -298,7 +298,7 @@ export const getCandidateUsers = async (
   }
 
   query += where;
-  query += ` LIMIT ${config.numOfMembers}`;
+  query += ` GROUP BY user.user_id LIMIT ${config.numOfMembers}`;
 
   let userRows: RowDataPacket[];
   [userRows] = await pool.query<RowDataPacket[]>(query);
