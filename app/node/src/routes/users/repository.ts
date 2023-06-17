@@ -294,7 +294,7 @@ export const getCandidateUsers = async (
 
   // 過去にマッチングしていない社員のみ対象
   if (config.neverMatchedFilter) {
-    where += ` AND user_id NOT IN (SELECT user_id FROM match_group_member WHERE match_group_id IN (SELECT match_group_id FROM match_group WHERE user_id = '${owner_id}'))`;
+    where += ` AND user.user_id NOT IN (SELECT user_id FROM match_group_member WHERE match_group_id IN (SELECT match_group_id FROM match_group WHERE user_id = '${owner_id}'))`;
   }
 
   query += where;
