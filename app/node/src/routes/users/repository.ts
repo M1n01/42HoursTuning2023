@@ -107,19 +107,46 @@ export const getUsersByUserIds = async (
   return users;
 };
 
-// まだどこからも呼んでいない
-// TODO: 差し替える
 export const getUsersByTargets = async (
+  keyword: string,
   targets: Target[]
 ): Promise<SearchedUser[]> => {
   // クエリを生成する
-  let query = "";
+  let query = "SELECT user_id FROM user WHERE";
   let isFirst = true;
   for (const target of targets) {
     if (isFirst) {
-      query += `SELECT user_id FROM user WHERE ${target} LIKE '%${target}%'`;
+      isFirst = false;
     } else {
-      query += ` AND ${target} LIKE '%${target}%'`;
+      query += ` OR`;
+    }
+    switch (target) {
+      case "userName":
+        query += ` user_name LIKE '%${keyword}%'`;
+        break ;
+      case "kana":
+        query += ` kana LIKE '%${keyword}%'`;
+        break ;
+      case "mail":
+        query += ` mail LIKE '%${keyword}%'`;
+        break ;
+      case "department":
+        query += ` user_id IN (SELECT user_id FROM department_role_member WHERE department_id IN (SELECT department_id FROM department WHERE department_name LIKE '%${keyword}%' AND active = true) AND belong = true)`;
+        break ;
+      case "role":
+        query += ` user_id IN (SELECT user_id FROM department_role_member WHERE role_id IN (SELECT role_id FROM role WHERE role_name LIKE '%${keyword}%' AND active = true) AND belong = true)`;
+        break ;
+      case "office":
+        query += ` office_id IN (SELECT office_id FROM office WHERE office_name LIKE '%${keyword}%')`;
+        break ;
+      case "skill":
+        query += ` user_id IN (SELECT user_id FROM skill_member WHERE skill_id IN (SELECT skill_id FROM skill WHERE skill_name LIKE '%${keyword}%'))`;
+        break ;
+      case "goal":
+        query += ` goal LIKE '%${keyword}%'`;
+        break ;
+      default:
+        break ;
     }
   }
   const [rows] = await pool.query<RowDataPacket[]>(query);
