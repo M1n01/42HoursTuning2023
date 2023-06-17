@@ -70,28 +70,16 @@ export const getUsersByUserIds = async (
   userIds: string[]
 ): Promise<SearchedUser[]> => {
   let users: SearchedUser[] = [];
-  for (const userId of userIds) {
-    const [userRows] = await pool.query<RowDataPacket[]>(
-      "SELECT user_id, user_name, kana, entry_date, office_id, user_icon_id FROM user WHERE user_id = ?",
-      [userId]
-    );
-    if (userRows.length === 0) {
-      continue;
-    }
+  const inClause = userIds.map((userId) => `'${userId}'`).join(", ");
 
-    const [officeRows] = await pool.query<RowDataPacket[]>(
-      `SELECT office_name FROM office WHERE office_id = ?`,
-      [userRows[0].office_id]
-    );
-    const [fileRows] = await pool.query<RowDataPacket[]>(
-      `SELECT file_name FROM file WHERE file_id = ?`,
-      [userRows[0].user_icon_id]
-    );
-    userRows[0].office_name = officeRows[0].office_name;
-    userRows[0].file_name = fileRows[0].file_name;
+  const query = `SELECT u.user_id, u.user_name, o.office_name, u.user_icon_id, f.file_name FROM user AS u \
+    LEFT JOIN office AS o ON o.office_id = u.office_id \
+    LEFT JOIN file AS f ON f.file_id = u.user_icon_id \
+    WHERE u.user_id IN (${inClause})`;
 
-    users = users.concat(convertToSearchedUser(userRows));
-  }
+  const [raw_users] = await pool.query<RowDataPacket[]>(query);
+
+  users = convertToSearchedUser(raw_users);
   return users;
 };
 
