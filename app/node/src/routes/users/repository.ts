@@ -266,7 +266,7 @@ export const getCandidateUsers = async (
   // 自部署の社員のみ対象
   if (config.departmentFilter === "onlyMyDepartment") {
     query += ` LEFT JOIN department_role_member AS drm ON user.user_id = drm.user_id`;
-    where += ` AND drm.department_id IN (SELECT DISTINCT department_id FROM department_role_member WHERE user_id = '${owner_id}' AND belong = true)`;
+    where += ` AND drm.department_id IN (SELECT DISTINCT department_id FROM department_role_member WHERE user_id = '${owner_id}' AND belong = true) AND belong = true`;
   }
 
   // 他部署の社員のみ対象
