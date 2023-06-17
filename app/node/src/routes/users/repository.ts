@@ -260,7 +260,7 @@ export const getCandidateUsers = async (
   owner_id: string,
   config: MatchGroupConfig
 ): Promise<string[]> => {
-  let query = `SELECT user.user_id FROM user`;
+  let query = `SELECT DISTINCT user.user_id FROM user`;
   let where = ` WHERE 1 = 1`;
 
   // 自部署の社員のみ対象
