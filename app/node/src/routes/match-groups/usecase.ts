@@ -27,14 +27,17 @@ export const createMatchGroup = async (
 ): Promise<MatchGroupDetail | undefined> => {
   const candidates = await getCandidateUsers(matchGroupConfig.ownerId, matchGroupConfig);
 
-  const withoutOwner = candidates.filter((candidate) => {candidate != matchGroupConfig.ownerId});
+  const withoutOwner = candidates.filter((candidate) => candidate != matchGroupConfig.ownerId);
   // ownerを含んでいる場合があるので切り詰める、足りない分はundefinedになる
   withoutOwner.length = matchGroupConfig.numOfMembers - 1;
 
-  const members = [matchGroupConfig.ownerId, ...withoutOwner].filter((member) => {member != undefined});
+  const members = [matchGroupConfig.ownerId, ...withoutOwner].filter((member) => member !== undefined);
 
   // 指定した条件に合うユーザーがいない場合は400エラーにする
   if (members.length < matchGroupConfig.numOfMembers) {
+    console.log("指定した条件に合うユーザーがいません");
+    console.log("members.length: " + members.length);
+    console.log("matchGroupConfig.numOfMembers: " + matchGroupConfig.numOfMembers);
     return;
   }
 
