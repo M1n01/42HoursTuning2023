@@ -244,7 +244,7 @@ export const getUserForFilter = async (
     // @memo: Postgresの場合はランダムサンプリングができる
     const max = 3_000_001;
     // 1からmaxまでの整数をランダムに取得する
-    const offset = Math.floor(Math.random() * max) + 1;
+    const offset = Math.floor(Math.random() * max);
     [userRows] = await pool.query<RowDataPacket[]>(
       "SELECT user_id, user_name, office_id, user_icon_id FROM user LIMIT 1 OFFSET ?",
       [offset]
