@@ -8,7 +8,10 @@ import {
   User,
 } from "../../model/types";
 import { getUsersByUserIds } from "../users/repository";
-import { convertToMatchGroupDetail } from "../../model/utils";
+import {
+  convertDateToString,
+  convertToMatchGroupDetail,
+} from "../../model/utils";
 
 export const getCandidateUsers = async (
   owner_id: string,
@@ -156,17 +159,50 @@ export const getMatchGroupsByMatchGroupIds = async (
   matchGroupIds: string[],
   status: string
 ): Promise<MatchGroup[]> => {
-  let matchGroups: MatchGroup[] = [];
-  for (const matchGroupId of matchGroupIds) {
-    const matchGroupDetail = await getMatchGroupDetailByMatchGroupId(
-      matchGroupId,
-      status
-    );
-    if (matchGroupDetail) {
-      const { description: _description, ...matchGroup } = matchGroupDetail;
-      matchGroups = matchGroups.concat(matchGroup);
-    }
+  const inClause = matchGroupIds.map((id) => `'${id}'`).join(",");
+  let query = `SELECT mg.match_group_id, mg.match_group_name, mg.description, mg.status, mg.created_by, mg.created_at, \
+    o.office_name, u.user_id, u.user_name, f.file_id, f.file_name \
+    FROM match_group AS mg \
+    LEFT JOIN match_group_member AS mgm ON mg.match_group_id = mgm.match_group_id \
+    LEFT JOIN user AS u ON mgm.user_id = u.user_id \
+    LEFT JOIN office AS o ON u.office_id = o.office_id \
+    LEFT JOIN file AS f ON u.user_icon_id = f.file_id \
+    WHERE mg.match_group_id IN (${inClause})`;
+  if (status === "open") {
+    query += " AND status = 'open'";
   }
 
+  const [rows] = await pool.query<RowDataPacket[]>(query);
+
+  const matchGroups: MatchGroup[] = [];
+  let last_match_group_id;
+  let groupNum = 0;
+  let group: MatchGroup;
+  for (const row of rows) {
+    if (last_match_group_id !== row.match_group_id) {
+      last_match_group_id = row.match_group_id;
+      group = {
+        matchGroupId: row.match_group_id,
+        matchGroupName: row.match_group_name,
+        members: [],
+        status: row.status,
+        createdBy: row.created_by,
+        createdAt: convertDateToString(row.created_at),
+      };
+      matchGroups.push(group);
+      groupNum++;
+    }
+
+    const member = {
+      userId: row.user_id,
+      userName: row.user_name,
+      officeName: row.office_name,
+      userIcon: {
+        fileId: row.file_id,
+        fileName: row.file_name,
+      },
+    };
+    matchGroups[groupNum - 1].members.push(member);
+  }
   return matchGroups;
 };
