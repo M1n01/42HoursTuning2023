@@ -8,6 +8,8 @@ import { getUsersByKeyword } from "./usecase";
 
 export const usersRouter = express.Router();
 
+const imageCache = new Map();
+
 // ユーザーアイコン画像取得API
 usersRouter.get(
   "/user-icon/:userIconId",
@@ -28,14 +30,21 @@ usersRouter.get(
         console.warn("specified user icon not found");
         return;
       }
+
       const path = userIcon.path;
-      // 500px x 500pxでリサイズ
-      const data = execSync(`convert ${path} -resize 500x500! PNG:-`, {
-        shell: "/bin/bash",
-      });
+      let imageData = imageCache.get(path);
+      if (!imageData) {
+        // 500px x 500pxでリサイズ
+        const data = execSync(`convert ${path} -resize 500x500! PNG:-`, {
+          shell: "/bin/bash",
+        });
+        imageData = data.toString("base64");
+        imageCache.set(path, imageData);
+      }
+
       res.status(200).json({
         fileName: userIcon.fileName,
-        data: data.toString("base64"),
+        data: imageData,
       });
       console.log("successfully get user icon");
     } catch (e) {
