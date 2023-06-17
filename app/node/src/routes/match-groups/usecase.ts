@@ -27,6 +27,8 @@ export const createMatchGroup = async (
 ): Promise<MatchGroupDetail | undefined> => {
   const candidates = await getCandidateUsers(matchGroupConfig.ownerId, matchGroupConfig);
 
+  // TODO: 指定した条件に合うユーザーがいない場合は400エラーにする
+
   const members = [matchGroupConfig.ownerId, ...candidates];
 
   const matchGroupId = uuidv4();
