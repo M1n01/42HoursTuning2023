@@ -116,7 +116,7 @@ export const getUsersByTargets = async (
           isDRM = true;
         }
         query += ` LEFT JOIN department AS d ON d.department_id = drm.department_id`;
-        where += ` OR d.department_name LIKE '%${keyword}%' AND d.active = true AND drm.belong = true`
+        where += ` OR (d.department_name LIKE '%${keyword}%' AND d.active = true AND drm.belong = true)`
         break ;
       case "role":
         if (!isDRM) {
