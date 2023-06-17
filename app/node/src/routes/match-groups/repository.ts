@@ -46,12 +46,13 @@ export const insertMatchGroup = async (matchGroupDetail: MatchGroupDetail) => {
     ]
   );
 
-  for (const member of matchGroupDetail.members) {
-    await pool.query<RowDataPacket[]>(
-      "INSERT INTO match_group_member (match_group_id, user_id) VALUES (?, ?)",
-      [matchGroupDetail.matchGroupId, member.userId]
-    );
-  }
+  const values = matchGroupDetail.members
+    .map((user_id) => `('${matchGroupDetail.matchGroupId}', '${user_id}')`)
+    .join(", ");
+
+  await pool.query<RowDataPacket[]>(
+    `INSERT INTO match_group_member (match_group_id, user_id) VALUES ${values}`
+  );
 };
 
 export const getMatchGroupDetailByMatchGroupId = async (
