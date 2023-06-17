@@ -289,7 +289,7 @@ export const getCandidateUsers = async (
   if (config.skillFilter.length > 0) {
     const skills = config.skillFilter.map((skill) => `'${skill}'`).join(",");
     query += ` LEFT JOIN skill_member AS sm ON user.user_id = sm.user_id LEFT JOIN skill AS s ON sm.skill_id = s.skill_id`;
-    where += ` AND sm.skill_NAME IN (${skills})`;
+    where += ` AND s.skill_name IN (${skills})`;
   }
 
   // 過去にマッチングしていない社員のみ対象
