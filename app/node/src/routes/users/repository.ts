@@ -240,8 +240,14 @@ export const getUserForFilter = async (
 ): Promise<UserForFilter> => {
   let userRows: RowDataPacket[];
   if (!userId) {
+    // DBからカラムの数を取得する
+    // @memo: Postgresの場合はランダムサンプリングができる
+    const max = 3_000_001;
+    // 1からmaxまでの整数をランダムに取得する
+    const offset = Math.floor(Math.random() * max) + 1;
     [userRows] = await pool.query<RowDataPacket[]>(
-      "SELECT user_id, user_name, office_id, user_icon_id FROM user ORDER BY RAND() LIMIT 1"
+      "SELECT user_id, user_name, office_id, user_icon_id FROM user LIMIT 1 OFFSET ?",
+      [offset]
     );
   } else {
     [userRows] = await pool.query<RowDataPacket[]>(
