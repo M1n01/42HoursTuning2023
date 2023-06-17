@@ -26,23 +26,12 @@ export const getUsers = async (
   limit: number,
   offset: number
 ): Promise<User[]> => {
-  const query = `SELECT user_id, user_name, office_id, user_icon_id FROM user ORDER BY entry_date ASC, kana ASC LIMIT ? OFFSET ?`;
-  const rows: RowDataPacket[] = [];
+  const query = `SELECT u.user_id, u.user_name, o.office_name, u.user_icon_id, f.file_name FROM user AS u \
+    LEFT JOIN office AS o ON o.office_id = u.office_id \
+    LEFT JOIN file AS f ON f.file_id = u.user_icon_id \
+    ORDER BY u.entry_date ASC, u.kana ASC LIMIT ${limit} OFFSET ${offset}`;
 
-  const [userRows] = await pool.query<RowDataPacket[]>(query, [limit, offset]);
-  for (const userRow of userRows) {
-    const [officeRows] = await pool.query<RowDataPacket[]>(
-      `SELECT office_name FROM office WHERE office_id = ?`,
-      [userRow.office_id]
-    );
-    const [fileRows] = await pool.query<RowDataPacket[]>(
-      `SELECT file_name FROM file WHERE file_id = ?`,
-      [userRow.user_icon_id]
-    );
-    userRow.office_name = officeRows[0].office_name;
-    userRow.file_name = fileRows[0].file_name;
-    rows.push(userRow);
-  }
+  const [rows] = await pool.query<RowDataPacket[]>(query);
 
   return convertToUsers(rows);
 };
