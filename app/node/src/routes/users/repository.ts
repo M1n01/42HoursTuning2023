@@ -260,20 +260,19 @@ export const getCandidateUsers = async (
   owner_id: string,
   config: MatchGroupConfig
 ): Promise<string[]> => {
-  let query = `SELECT user_id FROM user`;
-  let where = ` WHERE 1 == 1`;
+  let query = `SELECT user.user_id FROM user`;
+  let where = ` WHERE 1 = 1`;
 
   // 自部署の社員のみ対象
   if (config.departmentFilter === "onlyMyDepartment") {
     query += ` LEFT JOIN department_role_member AS drm ON user.user_id = drm.user_id`;
-    where += ` AND drm.department_id IN (SELECT department_id FROM department_role_member WHERE user_id = '${owner_id}')`;
+    where += ` AND drm.department_id IN (SELECT DISTINCT department_id FROM department_role_member WHERE user_id = '${owner_id}' AND belong = true)`;
   }
 
   // 他部署の社員のみ対象
   if (config.departmentFilter === "excludeMyDepartment") {
     query += ` LEFT JOIN department_role_member AS drm ON user.user_id = drm.user_id`;
-    where += ` AND drm.department_id NOT IN (SELECT department_id FROM department_role_member WHERE user_id = '${owner_id}')`;
-
+    where += ` AND drm.department_id NOT IN (SELECT DISTINCT department_id FROM department_role_member WHERE user_id = '${owner_id}' AND belong = true)`;
   }
 
   // 自拠点の社員のみ対象
@@ -299,7 +298,7 @@ export const getCandidateUsers = async (
   }
 
   query += where;
-  query += ` LIMIT ${config.numOfMembers - 1}`;
+  query += ` LIMIT ${config.numOfMembers}`;
 
   let userRows: RowDataPacket[];
   [userRows] = await pool.query<RowDataPacket[]>(query);

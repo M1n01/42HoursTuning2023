@@ -27,16 +27,18 @@ export const createMatchGroup = async (
 ): Promise<MatchGroupDetail | undefined> => {
   const candidates = await getCandidateUsers(matchGroupConfig.ownerId, matchGroupConfig);
 
-  // TODO: 指定した条件に合うユーザーがいない場合は400エラーにする
-
   const members = [matchGroupConfig.ownerId, ...candidates];
+  // membersに自分が含まれている場合もあるので、重複を削除
+  const unique = [...new Set(members)];
+
+  // TODO: 指定した条件に合うユーザーがいない場合は400エラーにする
 
   const matchGroupId = uuidv4();
   await insertMatchGroup({
     matchGroupId,
     matchGroupName: matchGroupConfig.matchGroupName,
     description: matchGroupConfig.description,
-    members,
+    members: unique,
     status: "open",
     createdBy: matchGroupConfig.ownerId,
     createdAt: new Date(),
