@@ -136,9 +136,7 @@ usersRouter.get(
     try {
       const duplicateUsers = await getUsersByKeyword(
         keyword,
-        targets as Target[],
-        limit,
-        offset
+        targets as Target[]
       );
       if (duplicateUsers.length === 0) {
         res.json([]);

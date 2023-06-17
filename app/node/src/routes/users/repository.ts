@@ -70,6 +70,9 @@ export const getUsersByUserIds = async (
   userIds: string[]
 ): Promise<SearchedUser[]> => {
   let users: SearchedUser[] = [];
+  if (userIds.length === 0) {
+    return [];
+  }
   const inClause = userIds.map((userId) => `'${userId}'`).join(", ");
 
   const query = `SELECT u.user_id, u.user_name, o.office_name, u.user_icon_id, f.file_name FROM user AS u \
