@@ -63,6 +63,18 @@ export interface MatchGroupDetail extends MatchGroup {
   description: string;
 }
 
+// MatchGroupDetailを変更すると影響箇所が多いので、MatchGroupDtoを作成
+// 更新時にはmembersはuser_idのみしか使っていない
+export interface MatchGroupDto {
+  matchGroupId: string;
+  matchGroupName: string;
+  members: string[];
+  status: "open" | "close";
+  createdBy: string;
+  createdAt: Date | string;
+  description: string;
+}
+
 export interface UserForFilter extends User {
   departmentName: string;
   skillNames: string[];
