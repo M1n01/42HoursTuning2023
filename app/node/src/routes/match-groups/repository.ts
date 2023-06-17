@@ -1,6 +1,6 @@
 import { RowDataPacket } from "mysql2";
 import pool from "../../util/mysql";
-import { MatchGroup, MatchGroupDetail, User } from "../../model/types";
+import { MatchGroup, MatchGroupDetail, MatchGroupDto, User } from "../../model/types";
 import { getUsersByUserIds } from "../users/repository";
 import { convertToMatchGroupDetail } from "../../model/utils";
 
@@ -33,7 +33,7 @@ export const getUserIdsBeforeMatched = async (
   return userIdRows.map((row) => row.user_id);
 };
 
-export const insertMatchGroup = async (matchGroupDetail: MatchGroupDetail) => {
+export const insertMatchGroup = async (matchGroupDetail: MatchGroupDto) => {
   await pool.query<RowDataPacket[]>(
     "INSERT INTO match_group (match_group_id, match_group_name, description, status, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?)",
     [
@@ -46,10 +46,10 @@ export const insertMatchGroup = async (matchGroupDetail: MatchGroupDetail) => {
     ]
   );
 
-  for (const member of matchGroupDetail.members) {
+  for (const userId of matchGroupDetail.members) {
     await pool.query<RowDataPacket[]>(
       "INSERT INTO match_group_member (match_group_id, user_id) VALUES (?, ?)",
-      [matchGroupDetail.matchGroupId, member.userId]
+      [matchGroupDetail.matchGroupId, userId]
     );
   }
 };

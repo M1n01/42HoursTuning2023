@@ -1,6 +1,6 @@
 import { RowDataPacket } from "mysql2";
 import pool from "../../util/mysql";
-import { SearchedUser, Target, User, UserForFilter } from "../../model/types";
+import { MatchGroupConfig, SearchedUser, Target, User, UserForFilter } from "../../model/types";
 import {
   convertToSearchedUser,
   convertToUserForFilter,
@@ -255,6 +255,55 @@ export const getUsersByGoal = async (goal: string): Promise<SearchedUser[]> => {
 
   return getUsersByUserIds(userIds);
 };
+
+export const getCandidateUsers = async (
+  owner_id: string,
+  config: MatchGroupConfig
+): Promise<string[]> => {
+  let query = `SELECT user.user_id FROM user`;
+  let where = ` WHERE 1 = 1`;
+
+  // 自部署の社員のみ対象
+  if (config.departmentFilter === "onlyMyDepartment") {
+    query += ` LEFT JOIN department_role_member AS drm ON user.user_id = drm.user_id`;
+    where += ` AND drm.department_id IN (SELECT DISTINCT department_id FROM department_role_member WHERE user_id = '${owner_id}' AND belong = true) AND belong = true`;
+  }
+
+  // 他部署の社員のみ対象
+  if (config.departmentFilter === "excludeMyDepartment") {
+    query += ` LEFT JOIN department_role_member AS drm ON user.user_id = drm.user_id`;
+    where += ` AND drm.department_id NOT IN (SELECT DISTINCT department_id FROM department_role_member WHERE user_id = '${owner_id}' AND belong = true)`;
+  }
+
+  // 自拠点の社員のみ対象
+  if (config.officeFilter === "onlyMyOffice") {
+    where += ` AND user.office_id = (SELECT office_id FROM user WHERE user_id = '${owner_id}')`
+  }
+
+  // 他拠点の社員のみ対象
+  if (config.officeFilter === "excludeMyOffice") {
+    where += ` AND user.office_id != (SELECT office_id FROM user WHERE user_id = '${owner_id}')`
+  }
+
+  // スキルが一致する社員のみ対象
+  if (config.skillFilter.length > 0) {
+    const skills = config.skillFilter.map((skill) => `'${skill}'`).join(", ");
+    query += ` LEFT JOIN skill_member AS sm ON user.user_id = sm.user_id LEFT JOIN skill AS s ON sm.skill_id = s.skill_id`;
+    where += ` AND s.skill_name IN (${skills})`;
+  }
+
+  // 過去にマッチングしていない社員のみ対象
+  if (config.neverMatchedFilter) {
+    where += ` AND user.user_id NOT IN (SELECT user_id FROM match_group_member WHERE match_group_id IN (SELECT match_group_id FROM match_group WHERE user_id = '${owner_id}'))`;
+  }
+
+  query += where;
+  query += ` GROUP BY user.user_id LIMIT ${config.numOfMembers}`;
+
+  let userRows: RowDataPacket[];
+  [userRows] = await pool.query<RowDataPacket[]>(query);
+  return userRows.map((row) => row.user_id);
+}
 
 export const getUserForFilter = async (
   userId?: string
