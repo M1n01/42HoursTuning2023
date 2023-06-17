@@ -298,6 +298,9 @@ export const getCandidateUsers = async (
     where += ` AND user_id NOT IN (SELECT user_id FROM match_group_member WHERE match_group_id IN (SELECT match_group_id FROM match_group WHERE user_id = '${owner_id}'))`;
   }
 
+  query += where;
+  query += ` LIMIT ${config.numOfMembers - 1}`;
+
   let userRows: RowDataPacket[];
   [userRows] = await pool.query<RowDataPacket[]>(
     "SELECT user_id, user_name, office_id, user_icon_id FROM user WHERE user_id = ?",
