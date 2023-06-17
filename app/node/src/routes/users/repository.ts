@@ -1,6 +1,6 @@
 import { RowDataPacket } from "mysql2";
 import pool from "../../util/mysql";
-import { SearchedUser, User, UserForFilter } from "../../model/types";
+import { SearchedUser, Target, User, UserForFilter } from "../../model/types";
 import {
   convertToSearchedUser,
   convertToUserForFilter,
@@ -105,6 +105,27 @@ export const getUsersByUserIds = async (
     users = users.concat(convertToSearchedUser(userRows));
   }
   return users;
+};
+
+// まだどこからも呼んでいない
+// TODO: 差し替える
+export const getUsersByTargets = async (
+  targets: Target[]
+): Promise<SearchedUser[]> => {
+  // クエリを生成する
+  let query = "";
+  let isFirst = true;
+  for (const target of targets) {
+    if (isFirst) {
+      query += `SELECT user_id FROM user WHERE ${target} LIKE '%${target}%'`;
+    } else {
+      query += ` AND ${target} LIKE '%${target}%'`;
+    }
+  }
+  const [rows] = await pool.query<RowDataPacket[]>(query);
+  const userIds: string[] = rows.map((row) => row.user_id);
+
+  return getUsersByUserIds(userIds);
 };
 
 export const getUsersByUserName = async (
