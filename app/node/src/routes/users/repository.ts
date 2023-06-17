@@ -109,7 +109,9 @@ export const getUsersByUserIds = async (
 
 export const getUsersByTargets = async (
   keyword: string,
-  targets: Target[]
+  targets: Target[],
+  limit: number,
+  offset: number,
 ): Promise<SearchedUser[]> => {
   // クエリを生成する
   let query = "SELECT user_id FROM user WHERE";
@@ -149,6 +151,8 @@ export const getUsersByTargets = async (
         break ;
     }
   }
+  // 入社日とかなの昇順にソートする。
+  query += ` ORDER BY entry_date, kana LIMIT ${limit} OFFSET ${offset}`;
   const [rows] = await pool.query<RowDataPacket[]>(query);
   const userIds: string[] = rows.map((row) => row.user_id);
 

@@ -5,8 +5,10 @@ import {
 
 export const getUsersByKeyword = async (
   keyword: string,
-  targets: Target[]
+  targets: Target[],
+  limit: number,
+  offset: number,
 ): Promise<SearchedUser[]> => {
-  const users: SearchedUser[] = await getUsersByTargets(keyword, targets);;
+  const users: SearchedUser[] = await getUsersByTargets(keyword, targets, limit, offset);
   return users;
 };
