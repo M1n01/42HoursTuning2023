@@ -16,7 +16,6 @@ export const getUsersByKeyword = async (
 ): Promise<SearchedUser[]> => {
   let users: SearchedUser[] = [];
   for (const target of targets) {
-    const oldLen = users.length;
     switch (target) {
       case "userName":
         users = users.concat(await getUsersByUserName(keyword));
