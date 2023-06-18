@@ -3,7 +3,7 @@ import { execSync } from "child_process";
 import { getUsers } from "./repository";
 import { getUserByUserId } from "./repository";
 import { getFileByFileId } from "../files/repository";
-import { SearchedUser, Target, User } from "../../model/types";
+import { Target, User } from "../../model/types";
 import { getUsersByKeyword } from "./usecase";
 
 export const usersRouter = express.Router();
@@ -143,49 +143,30 @@ usersRouter.get(
       offset = 0;
     }
     try {
-      const duplicateUsers = await getUsersByKeyword(
+      const uniqueUsers = await getUsersByKeyword(
         keyword,
-        targets as Target[]
+        targets as Target[],
+        limit,
+        offset
       );
-      if (duplicateUsers.length === 0) {
+      if (uniqueUsers.length === 0) {
         res.json([]);
         console.log("no user found");
         return;
       }
 
-      // 入社日・よみがなの昇順でソート
-      duplicateUsers.sort((a, b) => {
-        if (a.entryDate < b.entryDate) return -1;
-        if (a.entryDate > b.entryDate) return 1;
-        if (a.kana < b.kana) return -1;
-        if (a.kana > b.kana) return 1;
-        return 0;
-      });
-
-      // 重複ユーザーを削除
-      let uniqueUsers: SearchedUser[] = [];
-      duplicateUsers.forEach((user) => {
-        if (
-          !uniqueUsers.some((uniqueUser) => uniqueUser.userId === user.userId)
-        ) {
-          uniqueUsers = uniqueUsers.concat(user);
-        }
-      });
-
       // User型に変換
-      const users: User[] = uniqueUsers
-        .slice(offset, offset + limit)
-        .map((user) => {
-          return {
-            userId: user.userId,
-            userName: user.userName,
-            userIcon: {
-              fileId: user.userIcon.fileId,
-              fileName: user.userIcon.fileName,
-            },
-            officeName: user.officeName,
-          };
-        });
+      const users: User[] = uniqueUsers.map((user) => {
+        return {
+          userId: user.userId,
+          userName: user.userName,
+          userIcon: {
+            fileId: user.userIcon.fileId,
+            fileName: user.userIcon.fileName,
+          },
+          officeName: user.officeName,
+        };
+      });
       res.json(users);
       console.log(`successfully searched ${users.length} users`);
     } catch (e) {

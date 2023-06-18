@@ -61,7 +61,8 @@ export const getUserByUserId = async (
 };
 
 export const getUsersByUserIds = async (
-  userIds: string[]
+  userIds: string[],
+  order?: string
 ): Promise<SearchedUser[]> => {
   let users: SearchedUser[] = [];
   if (userIds.length === 0) {
@@ -69,10 +70,13 @@ export const getUsersByUserIds = async (
   }
   const inClause = userIds.map((userId) => `'${userId}'`).join(", ");
 
-  const query = `SELECT u.user_id, u.user_name, o.office_name, u.user_icon_id, f.file_name, u.entry_date, u.kana FROM user AS u \
+  let query = `SELECT u.user_id, u.user_name, o.office_name, u.user_icon_id, f.file_name, u.entry_date, u.kana FROM user AS u \
     LEFT JOIN office AS o ON o.office_id = u.office_id \
     LEFT JOIN file AS f ON f.file_id = u.user_icon_id \
     WHERE u.user_id IN (${inClause})`;
+  if (order) {
+    query += order;
+  }
 
   const [raw_users] = await pool.query<RowDataPacket[]>(query);
 
@@ -80,37 +84,67 @@ export const getUsersByUserIds = async (
   return users;
 };
 
-// まだどこからも呼んでいない
-// TODO: 差し替える
 export const getUsersByTargets = async (
-  targets: Target[]
+  keyword: string,
+  targets: Target[],
+  limit: number,
+  offset: number
 ): Promise<SearchedUser[]> => {
   // クエリを生成する
-  let query = "";
-  const isFirst = true;
+  let query = "SELECT user.user_id FROM user";
+  let where = " WHERE 1 != 1 ";
+  let isDRM = false;
   for (const target of targets) {
-    if (isFirst) {
-      query += `SELECT user_id FROM user WHERE ${target} LIKE '%${target}%'`;
-    } else {
-      query += ` AND ${target} LIKE '%${target}%'`;
+    switch (target) {
+      case "userName":
+        where += ` OR user.user_name LIKE '%${keyword}%'`;
+        break;
+      case "kana":
+        where += ` OR user.kana LIKE '%${keyword}%'`;
+        break;
+      case "mail":
+        where += ` OR user.mail LIKE '%${keyword}%'`;
+        break;
+      case "department":
+        if (!isDRM) {
+          query += ` LEFT JOIN department_role_member AS drm ON user.user_id = drm.user_id`;
+          isDRM = true;
+        }
+        query += ` LEFT JOIN department AS d ON d.department_id = drm.department_id`;
+        where += ` OR (d.department_name LIKE '%${keyword}%' AND d.active = true AND drm.belong = true)`;
+        break;
+      case "role":
+        if (!isDRM) {
+          query += ` LEFT JOIN department_role_member AS drm ON user.user_id = drm.user_id`;
+          isDRM = true;
+        }
+        query += ` LEFT JOIN role AS r ON drm.role_id = r.role_id`;
+        where += ` OR r.role_name LIKE '%${keyword}%' AND r.active = true AND drm.belong = true`;
+        break;
+      case "office":
+        query += ` LEFT JOIN office AS o ON user.office_id = o.office_id`;
+        where += ` OR o.office_name LIKE '%${keyword}%'`;
+        break;
+      case "skill":
+        query += ` LEFT JOIN skill_member AS sm ON user.user_id = sm.user_id`;
+        query += ` LEFT JOIN skill AS s ON sm.skill_id = s.skill_id`;
+        where += ` OR s.skill_name LIKE '%${keyword}%'`;
+        break;
+      case "goal":
+        where += ` OR user.goal LIKE '%${keyword}%'`;
+        break;
+      default:
+        break;
     }
   }
+  // 入社日とかなの昇順にソートする。
+  query += where;
+  query += ` ORDER BY user.entry_date, user.kana LIMIT ${limit} OFFSET ${offset}`;
+
   const [rows] = await pool.query<RowDataPacket[]>(query);
   const userIds: string[] = rows.map((row) => row.user_id);
 
-  return getUsersByUserIds(userIds);
-};
-
-export const getUsersByUserName = async (
-  userName: string
-): Promise<SearchedUser[]> => {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT user_id FROM user WHERE user_name LIKE ?`,
-    [`%${userName}%`]
-  );
-  const userIds: string[] = rows.map((row) => row.user_id);
-
-  return getUsersByUserIds(userIds);
+  return getUsersByUserIds(userIds, " ORDER BY u.entry_date, u.kana ASC");
 };
 
 export const getUsersByKana = async (kana: string): Promise<SearchedUser[]> => {
