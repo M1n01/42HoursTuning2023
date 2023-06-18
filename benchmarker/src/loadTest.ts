@@ -1,4 +1,4 @@
-import { check } from "k6";
+import { check, sleep } from "k6";
 import http from "k6/http";
 import { Options } from "k6/options";
 import exec from "k6/execution";
@@ -147,6 +147,7 @@ export const getUserIconAPI = () => {
   check(res, {
     "Get user icon: is status 200": () => res.status === 200,
   });
+  sleep(0.7);
 };
 
 export const getUsersAPI = () => {
@@ -199,7 +200,9 @@ export const createMatchGroupsAPI = () => {
 
 export const getMatchGroupsAPI = () => {
   const res = http.get(
-    url(`/api/v1/match-groups/members/692ee607-9cdf-439b-8b06-1a435c99aa5a?status=open`),
+    url(
+      `/api/v1/match-groups/members/692ee607-9cdf-439b-8b06-1a435c99aa5a?status=open`
+    ),
     {
       cookies: {
         SESSION_ID: "test-session-id",

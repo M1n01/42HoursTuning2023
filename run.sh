@@ -36,7 +36,8 @@ echo "サーバーへスコアを送信します。"
 requestBody=`cat ./benchmarker/score/${fileName}.json | awk '{print substr($0, 2, length($0)-2)}'`
 key=`cat ./.da/funcKey`
 repo=`cat /.da/cloneUrl`
-statusCode=`curl -o /dev/null -w '%{http_code}\n' -s -X POST -d '{"hostname": "'$HOSTNAME'", "repo": "'$repo'", '$requestBody'}' "https://ftt2306.azurewebsites.net/api/HttpTrigger1?code=${key}"`
+version="v2"
+statusCode=`curl -o /dev/null -w '%{http_code}\n' -s -X POST -d '{"hostname": "'$HOSTNAME'", "repo": "'$repo'","version": "'$version'", '$requestBody'}' "https://ftt2306.azurewebsites.net/api/HttpTrigger1?code=${key}"`
 
 if [ $statusCode = "200" ]; then
     echo "スコアの送信に成功しました。"
