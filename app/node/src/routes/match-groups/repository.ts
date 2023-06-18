@@ -23,35 +23,41 @@ export const getCandidateUsers = async (
   // 自部署の社員のみ対象
   if (config.departmentFilter === "onlyMyDepartment") {
     query += ` LEFT JOIN department_role_member AS drm ON user.user_id = drm.user_id`;
-    where += ` AND drm.department_id IN (SELECT DISTINCT department_id FROM department_role_member WHERE user_id = '${owner_id}' AND belong = true) AND belong = true`;
+    query += ` LEFT JOIN department_role_member AS drm2 ON drm2.user_id = '${owner_id}'`;
+    where += ` AND drm.department_id = drm2.department_id AND drm.belong = true AND drm2.belong = true`;
   }
 
   // 他部署の社員のみ対象
   if (config.departmentFilter === "excludeMyDepartment") {
     query += ` LEFT JOIN department_role_member AS drm ON user.user_id = drm.user_id`;
-    where += ` AND drm.department_id NOT IN (SELECT DISTINCT department_id FROM department_role_member WHERE user_id = '${owner_id}' AND belong = true)`;
+    query += ` LEFT JOIN department_role_member AS drm2 ON drm2.user_id = '${owner_id}'`;
+    where += ` AND drm.department_id != drm2.department_id AND drm.belong = true AND drm2.belong = true`;
   }
 
   // 自拠点の社員のみ対象
   if (config.officeFilter === "onlyMyOffice") {
-    where += ` AND user.office_id = (SELECT office_id FROM user WHERE user_id = '${owner_id}')`;
+    query += ` LEFT JOIN user AS u2 ON user.office_id = u2.office_id`;
+    where += ` AND u2.user_id = '${owner_id}'`;
   }
 
   // 他拠点の社員のみ対象
   if (config.officeFilter === "excludeMyOffice") {
-    where += ` AND user.office_id != (SELECT office_id FROM user WHERE user_id = '${owner_id}')`;
+    query += ` LEFT JOIN user AS u2 ON user.office_id != u2.office_id`;
+    where += ` AND u2.user_id = '${owner_id}'`;
   }
 
   // スキルが一致する社員のみ対象
   if (config.skillFilter.length > 0) {
     const skills = config.skillFilter.map((skill) => `'${skill}'`).join(", ");
-    query += ` LEFT JOIN skill_member AS sm ON user.user_id = sm.user_id LEFT JOIN skill AS s ON sm.skill_id = s.skill_id`;
+    query += ` LEFT JOIN skill_member AS sm ON user.user_id = sm.user_id`;
+    query += ` LEFT JOIN skill AS s ON sm.skill_id = s.skill_id`;
     where += ` AND s.skill_name IN (${skills})`;
   }
 
   // 過去にマッチングしていない社員のみ対象
   if (config.neverMatchedFilter) {
-    where += ` AND user.user_id NOT IN (SELECT user_id FROM match_group_member WHERE match_group_id IN (SELECT match_group_id FROM match_group WHERE user_id = '${owner_id}'))`;
+    query += ` LEFT JOIN (SELECT mgm1.user_id FROM match_group_member mgm1 JOIN match_group_member mgm2 ON mgm1.match_group_id = mgm2.match_group_id WHERE mgm1.user_id = '${owner_id}') AS joined_users ON user.user_id = joined_users.user_id`;
+    where += ` AND joined_users.user_id IS NULL`;
   }
 
   query += where;
