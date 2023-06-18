@@ -102,10 +102,12 @@ export const getUsersByTargets = async (
 };
 
 export const getUsersByUserName = async (
-  userName: string
+  userName: string,
+  limit: number,
+  offset: number
 ): Promise<SearchedUser[]> => {
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT user_id FROM user WHERE user_name LIKE ?`,
+    `SELECT user_id FROM user WHERE user_name LIKE ? ORDER BY entry_date ASC, kana ASC LIMIT ${limit} OFFSET ${offset}`,
     [`%${userName}%`]
   );
   const userIds: string[] = rows.map((row) => row.user_id);
@@ -113,9 +115,13 @@ export const getUsersByUserName = async (
   return getUsersByUserIds(userIds);
 };
 
-export const getUsersByKana = async (kana: string): Promise<SearchedUser[]> => {
+export const getUsersByKana = async (
+  kana: string,
+  limit: number,
+  offset: number
+): Promise<SearchedUser[]> => {
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT user_id FROM user WHERE kana LIKE ?`,
+    `SELECT user_id FROM user WHERE kana LIKE ? ORDER BY entry_date ASC, kana ASC LIMIT ${limit} OFFSET ${offset}`,
     [`%${kana}%`]
   );
   const userIds: string[] = rows.map((row) => row.user_id);
@@ -123,9 +129,13 @@ export const getUsersByKana = async (kana: string): Promise<SearchedUser[]> => {
   return getUsersByUserIds(userIds);
 };
 
-export const getUsersByMail = async (mail: string): Promise<SearchedUser[]> => {
+export const getUsersByMail = async (
+  mail: string,
+  limit: number,
+  offset: number
+): Promise<SearchedUser[]> => {
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT user_id FROM user WHERE mail LIKE ?`,
+    `SELECT user_id FROM user WHERE mail LIKE ? ORDER BY entry_date ASC, kana ASC LIMIT ${limit} OFFSET ${offset}`,
     [`%${mail}%`]
   );
   const userIds: string[] = rows.map((row) => row.user_id);
@@ -219,9 +229,13 @@ export const getUsersBySkillName = async (
   return getUsersByUserIds(userIds);
 };
 
-export const getUsersByGoal = async (goal: string): Promise<SearchedUser[]> => {
+export const getUsersByGoal = async (
+  goal: string,
+  limit: number,
+  offset: number
+): Promise<SearchedUser[]> => {
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT user_id FROM user WHERE goal LIKE ?`,
+    `SELECT user_id FROM user WHERE goal LIKE ? ORDER BY entry_date ASC, kana ASC LIMIT ${limit} OFFSET ${offset}`,
     [`%${goal}%`]
   );
   const userIds: string[] = rows.map((row) => row.user_id);
