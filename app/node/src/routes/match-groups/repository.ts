@@ -5,13 +5,8 @@ import {
   MatchGroupConfig,
   MatchGroupDetail,
   MatchGroupDto,
-  User,
 } from "../../model/types";
-import { getUsersByUserIds } from "../users/repository";
-import {
-  convertDateToString,
-  convertToMatchGroupDetail,
-} from "../../model/utils";
+import { convertDateToString } from "../../model/utils";
 
 export const getCandidateUsers = async (
   owner_id: string,
@@ -141,33 +136,50 @@ export const getMatchGroupDetailByMatchGroupId = async (
   matchGroupId: string,
   status?: string
 ): Promise<MatchGroupDetail | undefined> => {
-  let query =
-    "SELECT match_group_id, match_group_name, description, status, created_by, created_at FROM match_group WHERE match_group_id = ?";
+  let query = `SELECT mg.match_group_id, mg.match_group_name, mg.description, mg.status, mg.created_by, mg.created_at, \
+    o.office_name, u.user_id, u.user_name, f.file_id, f.file_name \
+    FROM match_group AS mg \
+    LEFT JOIN match_group_member AS mgm ON mg.match_group_id = mgm.match_group_id \
+    LEFT JOIN user AS u ON mgm.user_id = u.user_id \
+    LEFT JOIN office AS o ON u.office_id = o.office_id \
+    LEFT JOIN file AS f ON u.user_icon_id = f.file_id \
+    WHERE mg.match_group_id = '${matchGroupId}'`;
   if (status === "open") {
     query += " AND status = 'open'";
   }
-  const [matchGroup] = await pool.query<RowDataPacket[]>(query, [matchGroupId]);
-  if (matchGroup.length === 0) {
-    return;
+
+  const [rows] = await pool.query<RowDataPacket[]>(query);
+
+  let group: MatchGroupDetail | undefined = undefined;
+  let isFirst = true;
+  for (const row of rows) {
+    if (isFirst) {
+      group = {
+        matchGroupId: row.match_group_id,
+        matchGroupName: row.match_group_name,
+        description: row.description,
+        members: [],
+        status: row.status,
+        createdBy: row.created_by,
+        createdAt: convertDateToString(row.created_at),
+      };
+      isFirst = false;
+    }
+
+    const member = {
+      userId: row.user_id,
+      userName: row.user_name,
+      officeName: row.office_name,
+      userIcon: {
+        fileId: row.file_id,
+        fileName: row.file_name,
+      },
+    };
+    if (typeof group !== "undefined") {
+      group.members.push(member);
+    }
   }
-
-  const [matchGroupMemberIdRows] = await pool.query<RowDataPacket[]>(
-    "SELECT user_id FROM match_group_member WHERE match_group_id = ?",
-    [matchGroupId]
-  );
-  const matchGroupMemberIds: string[] = matchGroupMemberIdRows.map(
-    (row) => row.user_id
-  );
-
-  const searchedUsers = await getUsersByUserIds(matchGroupMemberIds);
-  // SearchedUserからUser型に変換
-  const members: User[] = searchedUsers.map((searchedUser) => {
-    const { kana: _kana, entryDate: _entryDate, ...rest } = searchedUser;
-    return rest;
-  });
-  matchGroup[0].members = members;
-
-  return convertToMatchGroupDetail(matchGroup[0]);
+  return group;
 };
 
 export const getMatchGroupIdsByUserId = async (
