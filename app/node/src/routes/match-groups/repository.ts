@@ -67,6 +67,25 @@ export const getCandidateUsers = async (
   return userRows.map((row) => row.user_id);
 };
 
+let skillsCache: string[] = [];
+
+export const unregisterSkills = async (
+  targets: string[]
+): Promise<string[]> => {
+  if (!skillsCache.length) {
+    const [row] = await pool.query<RowDataPacket[]>(
+      "SELECT skill_name FROM skill"
+    );
+    skillsCache = row.map((row) => row.skill_name);
+  }
+
+  const unregisterSkills = targets.filter((target) => {
+    return !skillsCache.some((skillName) => skillName === target);
+  });
+
+  return unregisterSkills;
+};
+
 export const hasSkillNameRecord = async (
   skillName: string
 ): Promise<boolean> => {

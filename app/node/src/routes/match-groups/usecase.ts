@@ -3,20 +3,18 @@ import { MatchGroupDetail, MatchGroupConfig } from "../../model/types";
 import {
   getCandidateUsers,
   getMatchGroupDetailByMatchGroupId,
-  hasSkillNameRecord,
   insertMatchGroup,
+  unregisterSkills,
 } from "./repository";
 
 export const checkSkillsRegistered = async (
   skillNames: string[]
-): Promise<string | undefined> => {
-  for (const skillName of skillNames) {
-    if (!(await hasSkillNameRecord(skillName))) {
-      return skillName;
-    }
+): Promise<string[] | undefined> => {
+  const skills = await unregisterSkills(skillNames);
+  if (skills.length === 0) {
+    return;
   }
-
-  return;
+  return skills;
 };
 
 export const createMatchGroup = async (
